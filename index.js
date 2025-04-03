@@ -3,6 +3,19 @@ const { DefaultAzureCredential } = require('@azure/identity');
 const fs = require('fs');
 require('dotenv').config();
 
+function checkEnvVariables() {
+  const requiredEnvVars = [
+    'PRIVATE_ENDPOINT_HOST',
+    'STORAGE_ACCOUNT_NAME'
+  ];
+
+  requiredEnvVars.forEach((envVar) => {
+    if (!process.env[envVar]) {
+      throw new Error(`Environment variable ${envVar} is not set.`);
+    }
+  });
+}
+
 async function writeFile(filePath, content) {
   return new Promise((resolve, reject) => {
     fs.writeFile(filePath, content, (err) => {
@@ -26,11 +39,13 @@ async function downloadFile(blobServiceClient, containerName, blobName, download
   const containerClient = blobServiceClient.getContainerClient(containerName);
   const blockBlobClient = containerClient.getBlockBlobClient(blobName);
   await blockBlobClient.downloadToFile(downloadFilePath);
-  console.log(`Downloaded block blob ${blobName} successfully`);
+  console.log(`Downloaded block blob ${blob} successfully`);
 }
 
 async function main() {
-  const privateEndpointIP = process.env.PRIVATE_ENDPOINT_IP;
+  checkEnvVariables();
+
+  const privateEndpointHost = process.env.PRIVATE_ENDPOINT_HOST;
   const accountName = process.env.STORAGE_ACCOUNT_NAME;
   const containerName = process.env.CONTAINER_NAME;
   const blobName = process.env.BLOB_NAME || 'dummy.txt';
@@ -43,7 +58,7 @@ async function main() {
   // Use DefaultAzureCredential to authenticate
   const credential = new DefaultAzureCredential();
   const blobServiceClient = new BlobServiceClient(
-    `https://${privateEndpointIP}/${accountName}`,
+    `https://${privateEndpointHost}/${accountName}`,
     credential
   );
 
